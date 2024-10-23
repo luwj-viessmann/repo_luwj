@@ -5,27 +5,13 @@ const createScene = function () {
   const scene = new BABYLON.Scene(engine);
 
   // Kamera und Licht
-  const camera = new BABYLON.ArcRotateCamera(
-    "camera",
-    -Math.PI / 2,
-    Math.PI / 3,
-    20,
-    new BABYLON.Vector3(0, 0, 0),
-    scene
-  );
-  camera.attachControl(canvas, true);
+  const camera = setupCamera(canvas, scene);
 
   const light = new BABYLON.HemisphericLight(
     "light",
     new BABYLON.Vector3(1, 1, 0),
     scene
   );
-
-  // Hausdimensionen
-  const baseWidth = 1;
-  const baseLength = 1;
-  const height = 1;
-  const roofHeight = 1.75;
 
   // Funktion zum Erstellen eines Rechtecks aus vier Eckpunkten (Vertices)
   function createRectangleMesh(name, vertices, scene) {
@@ -47,85 +33,10 @@ const createScene = function () {
     vertexData.positions = positions;
     vertexData.indices = indices;
     vertexData.normals = normals;
-    vertexData.applyToMesh(mesh);
+    vertexData.applyToMesh(mesh, true);
 
     return mesh;
   }
-
-  // Basis des Hauses (vier Rechtecke)
-  const baseVertices = [
-    // Vorne
-    [
-      new BABYLON.Vector3(-baseWidth / 2, 0, baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, 0, baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, height, baseLength / 2),
-    ],
-    // Hinten
-    [
-      new BABYLON.Vector3(-baseWidth / 2, 0, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, 0, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, height, -baseLength / 2),
-    ],
-    // Rechts
-    [
-      new BABYLON.Vector3(baseWidth / 2, 0, baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, 0, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, baseLength / 2),
-    ],
-    // Links
-    [
-      new BABYLON.Vector3(-baseWidth / 2, 0, baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, 0, -baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, height, baseLength / 2),
-    ],
-    // Boden
-    [
-      new BABYLON.Vector3(-baseWidth / 2, 0, baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, 0, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, 0, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, 0, baseLength / 2),
-    ],
-  ];
-
-  // Dachgiebel des Hauses (zwei Rechtecke)
-  const gableVertices = [
-    // Vorne
-    [
-      new BABYLON.Vector3(-baseWidth / 2, height, baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, baseLength / 2),
-    ],
-    // Hinten
-    [
-      new BABYLON.Vector3(-baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, -baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, -baseLength / 2),
-    ],
-  ];
-
-  // Dachgiebel des Hauses (zwei Rechtecke)
-  const roofVertices = [
-    // Rechts
-    [
-      new BABYLON.Vector3(-baseWidth / 2, height, baseLength / 2),
-      new BABYLON.Vector3(-baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, -baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, baseLength / 2),
-    ],
-    // Links
-    [
-      new BABYLON.Vector3(baseWidth / 2, height, baseLength / 2),
-      new BABYLON.Vector3(baseWidth / 2, height, -baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, -baseLength / 2),
-      new BABYLON.Vector3(0, roofHeight, baseLength / 2),
-    ],
-  ];
 
   // Erstelle die Basiswände (Rechtecke)
   const mFrontWall = createRectangleMesh("frontWall", baseVertices[0], scene);
@@ -143,8 +54,8 @@ const createScene = function () {
   const mBackGable = createRectangleMesh("backGable", gableVertices[1], scene);
 
   // Erstelle die Dachflächen
-  const mRightRoof = createRectangleMesh("frontWall", roofVertices[0], scene);
-  const mLeftRoof = createRectangleMesh("backWall", roofVertices[1], scene);
+  const mRightRoof = createRectangleMesh("rightRoof", roofVertices[0], scene);
+  const mLeftRoof = createRectangleMesh("leftRoof", roofVertices[1], scene);
 
   // Normalen der Faces anpassen
   mFrontWall.flipFaces(true);
@@ -153,28 +64,32 @@ const createScene = function () {
   mLeftRoof.flipFaces(true);
   mFloor.flipFaces(true);
 
-  // Event-Listener für Mausbewegungen
-  window.addEventListener("pointermove", (event) => {
-    // Ray (Strahl) von der Mausposition erstellen
-    const pickResult = scene.pick(scene.pointerX, scene.pointerY);
+  const meshes = {
+    frontWall: mFrontWall,
+    backWall: mBackWall,
+    rightWall: mRightWall,
+    leftWall: mLeftWall,
+    floor: mFloor,
+    frontGable: mFrontGable,
+    backGable: mBackGable,
+    rightRoof: mRightRoof,
+    leftRoof: mLeftRoof,
+  };
 
-    // Prüfen, ob der Strahl ein Mesh getroffen hat
-    if (pickResult.hit) {
-      if (pickResult.pickedMesh) {
-        console.log(pickResult.pickedMesh.name);
-      }
-    }
+  setupModelInteractor(scene, canvas, meshes);
+
+  // Register a render loop to repeatedly render the scene
+  engine.runRenderLoop(function () {
+    // Update die Mesh Positionen
+    updateMeshes(meshes);
+
+    scene.render();
   });
 
   return scene;
 };
 
 const scene = createScene(); // Call the createScene function
-
-// Register a render loop to repeatedly render the scene
-engine.runRenderLoop(function () {
-  scene.render();
-});
 
 // Watch for browser/canvas resize events
 window.addEventListener("resize", function () {
