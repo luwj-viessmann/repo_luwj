@@ -16,13 +16,18 @@
 
   <body>
     <div id="controls">
+      <span>DEBUG</span>
       <span
         >baseLength:
         <input id="input_baseLength" type="number" name="baseLength" value="1"
       /></span>
       <span
         >Roof height:
-        <input id="input_roofHeight" type="number" name="roofHeight" value="1.75"
+        <input
+          id="input_roofHeight"
+          type="number"
+          name="roofHeight"
+          value="1.75"
       /></span>
       <span
         >Base width:
@@ -31,6 +36,16 @@
       <span
         >height: <input id="input_height" type="number" name="height" value="1"
       /></span>
+      <input type="button" id="sbm_btn" name="Anwenden" value="Anwenden" />
+      <span>
+        <input type="checkbox" id="normals" name="normals" value="checked" checked="true"/>
+        <label for="normals">Show normals</label>
+      </span>
+      <span>
+        <input type="checkbox" id="bounding" name="bounding" value="true" checked="true"/>
+        <label for="bounding">Show bounding box</label>
+
+      </span>
     </div>
     <canvas id="renderCanvas" touch-action="none"></canvas>
     <script src="app.js"></script>

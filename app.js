@@ -3,9 +3,14 @@ const engine = new BABYLON.Engine(canvas, true);
 
 const createScene = function () {
   const scene = new BABYLON.Scene(engine);
+  scene.constantlyUpdateMeshUnderPointer = true;
+
+  const axes = new BABYLON.Debug.AxesViewer(scene, 2)
+
 
   // Kamera und Licht
   const camera = setupCamera(canvas, scene);
+  camera.minZ = -1000;
 
   const light = new BABYLON.HemisphericLight(
     "light",
@@ -78,10 +83,44 @@ const createScene = function () {
 
   setupModelInteractor(scene, canvas, meshes);
 
+  document.getElementById("sbm_btn").addEventListener("click", () => {
+    readInputs();
+    updateInputs();
+  });
+
   // Register a render loop to repeatedly render the scene
+  let normalLines = [];
+  let boundingBoxLines = [];
+
   engine.runRenderLoop(function () {
+    const normalsSelected = document.getElementById("normals").checked;
+    const boundingSelected = document.getElementById("bounding").checked;
     // Update die Mesh Positionen
     updateMeshes(meshes);
+
+    normalLines.forEach((m) => {
+      m.dispose();
+    });
+    normalLines = [];
+
+    if (normalsSelected) {
+      for (const [key, value] of Object.entries(meshes)) {
+        normalLines.push(showNormals(value, null, null, scene));
+      }
+    }
+
+    boundingBoxLines.forEach((m) => {
+      m.dispose();
+    });
+
+    boundingBoxLines = [];
+    if (boundingSelected) {
+      for (const [key, value] of Object.entries(meshes)) {
+        value.refreshBoundingInfo();
+        recalculateNormals(value);
+        boundingBoxLines.push(showBoundingBox(value, scene));
+      }
+    }
 
     scene.render();
   });
@@ -95,3 +134,78 @@ const scene = createScene(); // Call the createScene function
 window.addEventListener("resize", function () {
   engine.resize();
 });
+
+// === DEBUG VISUALS === //
+
+function showNormals(mesh, size, color, sc) {
+  var normals = mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind);
+  var positions = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  color = color || BABYLON.Color3.Red();
+  sc = sc || scene;
+  size = size || 1;
+
+  var lines = [];
+  for (let i = 0; i < normals.length; i += 3) {
+    var v1 = BABYLON.Vector3.FromArray(positions, i);
+    var v2 = v1.add(BABYLON.Vector3.FromArray(normals, i).scaleInPlace(size));
+    lines.push([v1.add(mesh.position), v2.add(mesh.position)]);
+  }
+  var normalLines = BABYLON.MeshBuilder.CreateLineSystem(
+    "normalLines",
+    { lines: lines },
+    sc
+  );
+  normalLines.color = color;
+  normalLines.isPickable = false;
+
+  return normalLines;
+}
+
+function showBoundingBox(mesh, scene) {
+  // Hole die Bounding-Info des Meshes
+  mesh.refreshBoundingInfo(); // Stelle sicher, dass die Bounding-Info aktuell ist
+  var boundingInfo = mesh.getBoundingInfo();
+
+  // Hole die Min- und Max-Eckpunkte der Bounding-Box
+  var min = boundingInfo.boundingBox.minimumWorld;
+  var max = boundingInfo.boundingBox.maximumWorld;
+
+  // Definiere die 8 Eckpunkte der Bounding-Box
+  var vertices = [
+    new BABYLON.Vector3(min.x, min.y, min.z),
+    new BABYLON.Vector3(max.x, min.y, min.z),
+    new BABYLON.Vector3(max.x, max.y, min.z),
+    new BABYLON.Vector3(min.x, max.y, min.z),
+    new BABYLON.Vector3(min.x, min.y, max.z),
+    new BABYLON.Vector3(max.x, min.y, max.z),
+    new BABYLON.Vector3(max.x, max.y, max.z),
+    new BABYLON.Vector3(min.x, max.y, max.z),
+  ];
+
+  // Definiere die 12 Linien, die die Bounding-Box-Ecken verbinden
+  var lines = [
+    [vertices[0], vertices[1]],
+    [vertices[1], vertices[2]],
+    [vertices[2], vertices[3]],
+    [vertices[3], vertices[0]], // Unterseite
+    [vertices[4], vertices[5]],
+    [vertices[5], vertices[6]],
+    [vertices[6], vertices[7]],
+    [vertices[7], vertices[4]], // Oberseite
+    [vertices[0], vertices[4]],
+    [vertices[1], vertices[5]],
+    [vertices[2], vertices[6]],
+    [vertices[3], vertices[7]], // Seiten
+  ];
+
+  // Erstelle ein Linien-Mesh für die Bounding-Box
+  var boundingBoxLines = BABYLON.MeshBuilder.CreateLineSystem(
+    "boundingBoxLines",
+    { lines: lines },
+    scene
+  );
+  boundingBoxLines.color = BABYLON.Color3.Green(); // Setze die Farbe auf Grün
+  boundingBoxLines.isPickable = false;
+
+  return boundingBoxLines;
+}

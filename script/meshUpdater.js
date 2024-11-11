@@ -3,7 +3,7 @@ let dimensions = {
   baseWidth: 1,
   baseLength: 1,
   height: 1,
-  roofHeight: 1.75,
+  roofHeight: 1,
 };
 
 // Basis des Hauses (vier Rechtecke)
@@ -141,12 +141,12 @@ let gableVertices = [
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       dimensions["baseLength"] / 2
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       dimensions["baseLength"] / 2
     ),
   ],
@@ -164,12 +164,12 @@ let gableVertices = [
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       -dimensions["baseLength"] / 2
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       -dimensions["baseLength"] / 2
     ),
   ],
@@ -191,12 +191,12 @@ let roofVertices = [
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       -dimensions["baseLength"] / 2
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       dimensions["baseLength"] / 2
     ),
   ],
@@ -214,23 +214,44 @@ let roofVertices = [
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       -dimensions["baseLength"] / 2
     ),
     new BABYLON.Vector3(
       0,
-      dimensions["roofHeight"],
+      dimensions["height"] + dimensions["roofHeight"],
       dimensions["baseLength"] / 2
     ),
   ],
 ];
 
+const readInputs = () => {
+  dimensions["baseWidth"] = parseFloat(
+    document.getElementById("input_baseWidth").value
+  );
+  dimensions["baseLength"] = parseFloat(
+    document.getElementById("input_baseLength").value
+  );
+  dimensions["height"] = parseFloat(
+    document.getElementById("input_height").value
+  );
+  dimensions["roofHeight"] = parseFloat(
+    document.getElementById("input_roofHeight").value
+  );
+  console.log(dimensions);
+};
+
+const updateInputs = () => {
+  document.getElementById("input_baseWidth").value = dimensions["baseWidth"];
+  document.getElementById("input_baseLength").value = dimensions["baseLength"];
+  document.getElementById("input_height").value = dimensions["height"];
+  document.getElementById("input_roofHeight").value = dimensions["roofHeight"];
+};
+
+
+
 const updateMeshes = (meshes) => {
   // Temporär: auslesen -> später löschen
-  dimensions["baseWidth"] = document.getElementById("input_baseWidth").value;
-  dimensions["baseLength"] = document.getElementById("input_baseLength").value;
-  dimensions["height"] = document.getElementById("input_height").value;
-  dimensions["roofHeight"] = document.getElementById("input_roofHeight").value;
 
   updateVertex();
 
@@ -281,6 +302,8 @@ const updateMeshes = (meshes) => {
     BABYLON.VertexBuffer.PositionKind,
     pointsToPoitions(roofVertices[1])
   );
+
+  
 };
 
 const pointsToPoitions = (vertices) => {
@@ -430,12 +453,12 @@ const updateVertex = () => {
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         dimensions["baseLength"] / 2
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         dimensions["baseLength"] / 2
       ),
     ],
@@ -453,12 +476,12 @@ const updateVertex = () => {
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         -dimensions["baseLength"] / 2
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         -dimensions["baseLength"] / 2
       ),
     ],
@@ -480,12 +503,12 @@ const updateVertex = () => {
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         -dimensions["baseLength"] / 2
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         dimensions["baseLength"] / 2
       ),
     ],
@@ -503,14 +526,29 @@ const updateVertex = () => {
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         -dimensions["baseLength"] / 2
       ),
       new BABYLON.Vector3(
         0,
-        dimensions["roofHeight"],
+        dimensions["height"] + dimensions["roofHeight"],
         dimensions["baseLength"] / 2
       ),
     ],
   ];
 };
+
+function recalculateNormals(mesh) {
+  // Hole die Positions- und Index-Daten des Meshes
+  var positions = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  var indices = mesh.getIndices();
+  var normals = [];
+
+  // Berechne die Normalen und aktualisiere sie im Mesh
+  BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+  mesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normals);
+  // Wenn nötig, gehe von lokalen in Weltkoordinaten über (optional)
+  mesh.computeWorldMatrix(true); // Weltmatrix neu berechnen
+}
+
+
